@@ -60,7 +60,7 @@ jobs:
     #     paths: ./main
 
   Docker:
-    if: [[ ${{ steps.meta.outputs.tags }} ]] 
+    if: ${{ steps.meta.outputs.tags }}
     runs-on: ubuntu-24.04
     environment: dev
     needs: [app]
