@@ -9,7 +9,7 @@ on:
 jobs:
 
   sonar:
-    if: github.ref == 'refs/heads/main'
+    # if: github.ref == 'refs/heads/main'
     name: SonarCloud
     runs-on: ubuntu-24.04
     environment: dev
@@ -17,7 +17,7 @@ jobs:
     - 
       uses: actions/checkout@v4
       with:
-        fetch-depth: 0
+        ref: ${{ github.ref}}
     - 
       name: Sonar Scan
       uses: SonarSource/sonarcloud-github-action@master
@@ -38,7 +38,7 @@ jobs:
       name: Setup Go Environment
       uses: actions/setup-go@v5
       with:
-        go-version: '>=2.22'
+        go-version: '2.22.5'
     - 
       name: Build App
       run: go build -o main .
