@@ -59,7 +59,7 @@ jobs:
     #     name: app-artifact
     #     paths: ./main
 
-  Docker:
+  docker:
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-24.04
     environment: dev
