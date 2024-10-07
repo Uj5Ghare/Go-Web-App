@@ -8,49 +8,41 @@ on:
 
 jobs:
 
-  sonar:
+  Sonar:
     # if: github.ref == 'refs/heads/main'
     name: SonarCloud
     runs-on: ubuntu-24.04
     environment: dev
     steps:
-    - 
-      uses: actions/checkout@v4
+    - uses: actions/checkout@v4
       with:
         ref: ${{ github.ref}}
-    - 
-      name: Sonar Scan
+    - name: Sonar Scan
       uses: SonarSource/sonarcloud-github-action@master
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
-  app:
+  App:
     runs-on: ubuntu-24.04
     environment: dev
-    needs: [sonar]
+    needs: [Sonar]
     steps:
-    - 
-      name: Checkout Code
+    - name: Checkout Code
       uses: actions/checkout@v4
       with:
         ref: ${{ github.ref }}
-    - 
-      name: Setup Go Environment
+    - name: Setup Go Environment
       uses: actions/setup-go@v5
       with:
         go-version: '1.22.5'
-    -
-      name: Install PM2
+    - name: Install PM2
       run: npm install -g pm2
-    - 
-      name: Build App
+    - name: Build App
       run: go build -o main .
-    - 
-      name: Test App
+    - name: Test App
       run: go test
-    - 
-      name: Deploy App
+    - name: Deploy App
       run: pm2 start "./main" --name "go-web-app"
     # - 
     #   name: Upload Artifact
@@ -59,36 +51,24 @@ jobs:
     #     name: app-artifact
     #     paths: ./main
 
-  docker:
-    # if: startsWith(github.ref, 'refs/tags/v')
+  Docker:
     runs-on: ubuntu-24.04
     environment: dev
-    needs: [app]
+    needs: [App]
     steps:
-    - 
-      name: Set up QEMU
+    - name: Set up QEMU
       uses: docker/setup-qemu-action@v3
-    -
-      name: Set up Docker Buildx
+    - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
-    - 
-      name: Extract Metadata
-      uses: docker/metadata-action@v5
-      id: meta
-      with:
-        images: |
-          ${{ vars.DOCKERHUB_USERNAME }}/go-web-app
-        tags: |
-          type=semver,pattern={{version}}
-    -
-      name: Login to Docker Hub
+    - name: Login to Docker Hub
       uses: docker/login-action@v3
       with:
           username: ${{ vars.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-    -
-      name: Build and push
+    - name: Create Tag
+      run: git log -1 --pretty=format:%h
+    - name: Build and push
       uses: docker/build-push-action@v6
       with:
           push: true
-          tags: ${{ steps.meta.outputs.tags }}
+          tags: 1.${{ github.run_number }}.${{ github.run_attempt}}
