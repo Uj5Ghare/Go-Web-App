@@ -8,9 +8,8 @@ on:
 
 jobs:
 
-  Sonar:
+  SonarQube-Code-Analysis:
     # if: github.ref == 'refs/heads/main'
-    name: SonarCloud
     runs-on: ubuntu-24.04
     environment: dev
     steps:
@@ -23,10 +22,22 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
-  App:
+  Code-Quality-Check:
     runs-on: ubuntu-24.04
     environment: dev
-    needs: [Sonar]
+    needs: [SonarQube-Code-Analysis]
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    - name: Run golangci-lint
+      uses: golangci/golangci-lint-action@v6
+      with:
+        version: v1.56.2
+
+  Build-App-For-Dev:
+    runs-on: ubuntu-24.04
+    environment: dev
+    needs: [Code-Quality-Check]
     steps:
     - name: Checkout Code
       uses: actions/checkout@v4
@@ -38,12 +49,10 @@ jobs:
         go-version: '1.22.5'
     - name: Install PM2
       run: npm install -g pm2
-    - name: Build App
+    - name: Build
       run: go build -o main .
-    - name: Test App
+    - name: Test
       run: go test
-    - name: Deploy App
-      run: pm2 start "./main" --name "go-web-app"
     # - 
     #   name: Upload Artifact
     #   uses: actions/upload-artifact@v4
@@ -51,16 +60,14 @@ jobs:
     #     name: app-artifact
     #     paths: ./main
 
-  Docker:
+  Push-To-Docker-Registry:
     runs-on: ubuntu-24.04
     environment: dev
-    needs: [App]
+    needs: [Build-App-For-Dev]
     steps:
-    - name: Set up QEMU
-      uses: docker/setup-qemu-action@v3
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v3
-    - name: Login to Docker Hub
+    - name: Login to Docker Registry
       uses: docker/login-action@v3
       with:
           username: ${{ vars.DOCKERHUB_USERNAME }}
