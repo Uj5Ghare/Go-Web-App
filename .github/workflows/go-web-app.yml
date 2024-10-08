@@ -1,4 +1,4 @@
-name: Build
+name: Go-Web-App Workflow
 on:
   push:
     branches: [main, dev]
@@ -13,7 +13,8 @@ jobs:
     runs-on: ubuntu-24.04
     environment: dev
     steps:
-    - uses: actions/checkout@v4
+    - name: Checkout Code
+      uses: actions/checkout@v4
       with:
         ref: ${{ github.ref}}
     - name: Sonar Scan
@@ -23,11 +24,9 @@ jobs:
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
   Code-Quality-Check:
-    runs-on: ubuntu-24.04
-    environment: dev
-    needs: [SonarQube-Code-Analysis]
+    runs-on: ubuntu-latest
     steps:
-    - name: Checkout repository
+    - name: Checkout Code
       uses: actions/checkout@v4
     - name: Run golangci-lint
       uses: golangci/golangci-lint-action@v6
@@ -37,7 +36,7 @@ jobs:
   Build-App-For-Dev:
     runs-on: ubuntu-24.04
     environment: dev
-    needs: [Code-Quality-Check]
+    needs: [SonarQube-Code-Analysis]
     steps:
     - name: Checkout Code
       uses: actions/checkout@v4
@@ -46,7 +45,7 @@ jobs:
     - name: Setup Go Environment
       uses: actions/setup-go@v5
       with:
-        go-version: '1.22.5'
+        go-version: '1.22'
     - name: Install PM2
       run: npm install -g pm2
     - name: Build
