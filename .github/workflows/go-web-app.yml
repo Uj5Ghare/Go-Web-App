@@ -60,16 +60,31 @@ jobs:
       run: go build -o main .
     - name: Test
       run: go test
-    # - 
-    #   name: Upload Artifact
-    #   uses: actions/upload-artifact@v4
-    #   with:
-    #     name: app-artifact
-    #     paths: ./main
+
+  Build-App-For-Prod:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    environment: prod
+    needs: [SonarQube-Code-Analysis]
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+      with:
+        ref: ${{ github.ref }}
+    - name: Setup Go Environment
+      uses: actions/setup-go@v5
+      with:
+        go-version-file: go.mod
+    - name: Install PM2
+      run: npm install -g pm2
+    - name: Build
+      run: go build -o main .
+    - name: Test
+      run: go test
 
   Image-Vulnerability-Check:
     runs-on: ubuntu-24.04
-    if: github.ref == 'refs/heads/develop'
+    if: github.ref == 'refs/heads/dev'
     needs: [Build-App-For-Dev]
     continue-on-error: true
     steps:
