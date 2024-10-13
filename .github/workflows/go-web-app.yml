@@ -94,13 +94,11 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
       - name: Build Docker Image
-        uses: docker/build-push-action@v6
-        with:
-            tags: ${{ vars.DOCKERHUB_USERNAME }}/go-web-app:1.${{ github.run_number }}.${{ github.run_attempt}}
+        run: docker build -t docker.io/${{ vars.DOCKERHUB_USERNAME }}/go-web-app:${{ github.sha }} .
       - name: Run Trivy Vulnerability Scanner
         uses: aquasecurity/trivy-action@0.20.0
         with:
-          image-ref: '${{ vars.DOCKERHUB_USERNAME }}/go-web-app:1.${{ github.run_number }}.${{ github.run_attempt}}'
+          image-ref: 'docker.io/${{ vars.DOCKERHUB_USERNAME }}/go-web-app:${{ github.sha }}'
           format: 'table'
           exit-code: '1'
           ignore-unfixed: true
