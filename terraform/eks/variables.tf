@@ -11,11 +11,11 @@ variable "instance_type" {
 
 variable "aws_access_key" {
   type = string
-  default =  {}
+  default =  "${AWS_ACCESS_KEY}"
 }
 
 variable "aws_secret_key" {
   type = string
-  default =  {}
+  default =  "${AWS_SECRET_KEY}"
 }
 
