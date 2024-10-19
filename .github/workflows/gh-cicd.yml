@@ -197,3 +197,21 @@ jobs:
       with:
           push: true
           tags: ${{ vars.DOCKERHUB_USERNAME }}/go-web-app:1.${{ github.run_number }}.${{ github.run_attempt}}-dev
+  
+  Update-Helm-Chart-For-Prod:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    needs: [Push-To-DockerHub-For-Prod]
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+    - name: Update tag in Helm chart
+      run: |
+        sed -i 's/tag: .*/tag: "${{ vars.DOCKERHUB_USERNAME }}/go-web-app:1.${{ github.run_number }}.${{ github.run_attempt}}-prod"/' helm/go-web-app-chart/values.yaml
+    - name: Commit and push changes
+      run: |
+        git config --global user.email "ujwal5ghare@gmail.com"
+        git config --global user.name "Ujwal Pachghare"
+        git add helm/go-web-app-chart/values.yaml
+        git commit -m "Update tag in Helm chart"
+        git push
