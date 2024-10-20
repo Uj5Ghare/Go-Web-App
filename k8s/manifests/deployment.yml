@@ -1,0 +1,26 @@
+# This is a sample deployment manifest file for a simple web application.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: go-web-app-deployment
+  labels:
+    app: go-web-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: go-web-app
+  template:
+    metadata:
+      labels:
+        app: go-web-app
+    spec:
+      containers:
+      - name: go-web-app
+        image: uj5ghare/go-web-app:1.25.1-dev
+        ports:
+        - containerPort: 8080
+      imagePullPolicy: IfNotPresent
+      # imagePullSecrets:
+      # - name: <docker-secrets-name>  # pulling image from private registry with secrets
+      # cmd to create secrets = [ kubectl create secret docker-registry docker-secrets --docker-server=https://index.docker.io/v1/ --docker-username=ExamplaName --docker-password=ExamplePassword --docker-email=example@gmail.com ]
