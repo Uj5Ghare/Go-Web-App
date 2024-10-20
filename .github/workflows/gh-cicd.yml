@@ -2,6 +2,11 @@ name: Go-Web-App Workflow
 on:
   push:
     branches: [main, dev]
+    paths-ignore:
+      - 'helm/**'
+      - 'k8s/**'
+      - 'terraform/**'
+      - 'README.md'
   pull_request:
     types: [synchronize]
   workflow_dispatch:
@@ -17,7 +22,7 @@ permissions:
 jobs:
 
   Code-Quality-Check:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest  #must run with ubuntu-latest
     continue-on-error: true
     steps:
     - name: Checkout Code
