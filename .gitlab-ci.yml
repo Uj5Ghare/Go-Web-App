@@ -1,0 +1,178 @@
+stages:
+  - code_quality
+  - sonar_analysis
+  - build_app
+  - image_vuln_check
+  - push_to_dockerhub
+  - update_helm_chart
+
+code_quality_check:
+  stage: code_quality
+  image: alpine
+  script:
+    - wget -O- -nv https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s v1.61.0
+    - ./bin/golangci-lint run
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "dev"'
+  allow_failure: true
+
+sonar_analysis_prod:
+  stage: sonar_analysis
+  image: ubuntu:latest
+  environment: prod
+  before_script:
+    - apt update && apt install curl unzip -y
+    - export SONAR_SCANNER_VERSION=6.2.1.4610
+    - export SONAR_SCANNER_HOME=$HOME/.sonar/sonar-scanner-$SONAR_SCANNER_VERSION-linux-x64
+    - curl --create-dirs -sSLo $HOME/.sonar/sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-$SONAR_SCANNER_VERSION-linux-x64.zip
+    - unzip -o $HOME/.sonar/sonar-scanner.zip -d $HOME/.sonar/
+    - export PATH=$SONAR_SCANNER_HOME/bin:$PATH
+    - export SONAR_SCANNER_OPTS="-server"
+  script:
+    - sonar-scanner -Dsonar.organization=uj5ghare -Dsonar.projectKey=uj5ghare_go-web-app-gl -Dsonar.sources=. -Dsonar.host.url=https://sonarcloud.io
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+
+sonar_analysis_dev:
+  stage: sonar_analysis
+  image: ubuntu:latest
+  environment: dev
+  before_script:
+    - apt update && apt install curl unzip -y
+    - export SONAR_SCANNER_VERSION=6.2.1.4610
+    - export SONAR_SCANNER_HOME=$HOME/.sonar/sonar-scanner-$SONAR_SCANNER_VERSION-linux-x64
+    - curl --create-dirs -sSLo $HOME/.sonar/sonar-scanner.zip https://binaries.sonarsource.com/Distribution/sonar-scanner-cli/sonar-scanner-cli-$SONAR_SCANNER_VERSION-linux-x64.zip
+    - unzip -o $HOME/.sonar/sonar-scanner.zip -d $HOME/.sonar/
+    - export PATH=$SONAR_SCANNER_HOME/bin:$PATH
+    - export SONAR_SCANNER_OPTS="-server"
+  script:
+    - sonar-scanner -Dsonar.organization=uj5ghare -Dsonar.projectKey=uj5ghare_go-web-app-gl -Dsonar.sources=. -Dsonar.host.url=https://sonarcloud.io
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "dev"'
+
+build_app_prod:
+  stage: build_app
+  image: golang:1.22
+  environment: prod
+  script:
+    - go mod download
+    - go build -o main .
+    - go test
+  artifacts:
+    untracked: false
+    when: on_success
+    access: all
+    expire_in: 30 days
+    paths:
+      - ./main
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+  dependencies:
+    - sonar_analysis_prod
+
+build_app_dev:
+  stage: build_app
+  image: golang:1.22
+  environment: dev
+  script:
+    - go mod download
+    - go build -o main .
+    - go test
+  artifacts:
+    untracked: false
+    when: on_success
+    access: all
+    expire_in: 30 days
+    paths:
+      - ./main
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "dev"'
+  dependencies:
+    - sonar_analysis_dev
+
+# image_vuln_check_prod:
+#   stage: image_vuln_check
+#   image: ubuntu:latest
+#   environment: prod
+#   before_script:
+#     - apt update && apt install curl docker.io -y
+#     - curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin v0.56.2
+#   script:
+#     - docker build -t docker.io/$DOCKERHUB_USERNAME/go-web-app:$CI_COMMIT_SHA .
+#     - trivy image --severity CRITICAL,HIGH --exit-code 1 --ignore-unfixed --output trivy-report-for-prod.txt docker.io/$DOCKERHUB_USERNAME/go-web-app:$CI_COMMIT_SHA
+#   artifacts:
+#     paths:
+#       - ./trivy-report-for-prod.txt
+#   rules:
+#     - if: '$CI_COMMIT_BRANCH == "main"'
+#   dependencies:
+#     - build_app_prod
+
+# image_vuln_check_dev:
+#   stage: image_vuln_check
+#   environment: dev
+#   image: 
+#     name: docker.io/aquasec/trivy:latest
+#     entrypoint: [""]
+#   services:
+#     - name: docker:20.10.16-dind
+#       alias: docker
+#   script:
+#     - docker build -t $DOCKERHUB_USERNAME/go-web-app:$CI_COMMIT_SHA .
+#     - time trivy image --severity CRITICAL,HIGH --exit-code 1 --ignore-unfixed --output trivy-report-for-dev.txt $DOCKERHUB_USERNAME/go-web-app:$CI_COMMIT_SHA
+#   artifacts:
+#     paths:
+#       - ./trivy-report-for-dev.txt
+#   rules:
+#     - if: '$CI_COMMIT_BRANCH == "dev"'
+#   dependencies:
+#     - build_app_dev
+
+push_to_dockerhub_prod:
+  stage: push_to_dockerhub
+  image: docker:latest
+  environment: prod
+  services:
+    - name: docker:20.10.16-dind
+      alias: docker
+  script:
+    - echo "$DOCKERHUB_TOKEN" | docker login -u $DOCKERHUB_USERNAME --password-stdin
+    - docker build -t docker.io/$DOCKERHUB_USERNAME/go-web-app:1.$CI_PIPELINE_IID-prod .
+    - docker push $DOCKERHUB_USERNAME/go-web-app:1.$CI_PIPELINE_IID-prod
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+  dependencies:
+    - build_app_prod
+
+push_to_dockerhub_dev:
+  stage: push_to_dockerhub
+  image: docker:latest
+  environment: dev
+  services:
+    - name: docker:20.10.16-dind
+      alias: docker
+  script:
+    - echo "$DOCKERHUB_TOKEN" | docker login -u $DOCKERHUB_USERNAME --password-stdin
+    - docker build -t docker.io/$DOCKERHUB_USERNAME/go-web-app:1.$CI_PIPELINE_IID-dev .
+    - docker push docker.io/$DOCKERHUB_USERNAME/go-web-app:1.$CI_PIPELINE_IID-dev
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "dev"'
+  dependencies:
+    - build_app_dev
+
+update_helm_chart_prod:
+  stage: update_helm_chart
+  image: ubuntu:latest
+  environment: prod
+  script:
+    - sed -i 's/tag:"1.$CI_PIPELINE_IID-prod"/' helm/go-web-app-chart/values.yaml
+    - git config --global user.email "ujwal5ghare@gmail.com"
+    - git config --global user.name "Ujwal Pachghare"
+    - git add helm/go-web-app-chart/values.yaml
+    - git commit -m "Update tag in Helm chart"
+    - git push
+  only:
+    refs:
+      - main
+  dependencies:
+    - push_to_dockerhub_prod
