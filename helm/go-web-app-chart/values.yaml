@@ -8,7 +8,7 @@ defaultLabel: go-web-app
 image:
   repository: uj5ghare/go-web-app
   pullPolicy: IfNotPresent
-  tag: "1.25.1-dev"
+  tag: "1.7.1-prod"
 
 service:
   type: ClusterIP
