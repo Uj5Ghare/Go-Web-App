@@ -2,7 +2,8 @@
 
 ## Overview
 
-The Go-Web-App is a web application built with Go. This repository includes a GitHub Actions workflow to automate code quality checks, SonarQube analysis, application builds, Docker image vulnerability checks, and deployment to EKS Cluster. 
+The Go-Web-App is a web application built with Go that is forked from [iam-veeramalla/go-web-app](https://github.com/iam-veeramalla/go-web-app) repo and further added DevOps/DevSecOps best practices by [Uj5Ghare/Go-Web-App](https://github.com/Uj5Ghare/Go-Web-App) <br>
+This repository includes a GitHub Actions workflow & GitLab CI/CD pipeline to automate code quality checks, SonarQube analysis, application builds, Docker image vulnerability checks, deployment to EKS Cluster with Terraform, and monitoring with Zabbix & AWS CloudWatch.
 
 ## Tools Used
 - **Programming Languages:** Golang & HTML
@@ -14,7 +15,8 @@ The Go-Web-App is a web application built with Go. This repository includes a Gi
 - **K8s Package Manager:** Helm 
 - **Infrastructure As Code Tool:** Terraform
 - **Process Management Tool:** PM2
-- **Security Management Tools:** SonarQube & Trivy,
+- **Security Management Tools:** SonarQube & Trivy
+- **Monitoring Tools:** Zabbix & CloudWatch
 
 ## Workflow
 
