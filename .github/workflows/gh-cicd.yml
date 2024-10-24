@@ -209,6 +209,8 @@ jobs:
     steps:
     - name: Checkout Code
       uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
     - name: Update tag in Helm chart
       run: |
         sed -i 's/tag: .*/tag: "1.${{ github.run_number }}.${{ github.run_attempt}}-prod"/' helm/go-web-app-chart/values.yaml
